@@ -1,8 +1,9 @@
 from turtle import Screen, Turtle
 import pandas as pd
+from check_anwers import Answers
 from scoreboard import Scoreboard
 
-# TODO 1: SetUp Screen to be an image of a blank American map
+# Screen Setup to be an image of a blank American map
 wn = Screen()
 wn.title("Name the American States")
 wn.setup(width=800, height=600)
@@ -10,33 +11,32 @@ image = "blank_states_img.gif"
 wn.addshape(image)
 states_map = Turtle(image)
 
-
-def show_state(x_pos, y_pos, state):
-    make_text = Turtle()
-    make_text.penup()
-    make_text.hideturtle()
-    make_text.setpos(x_pos, y_pos)
-    make_text.write(state, align="center", font=("Arial", 8, "normal"))
-
-
-# TODO 2: Ask user to name any state on the map.
-answer = wn.textinput(title="Guess the States", prompt="Enter a State").title()
+# State Data from CSV file
 state_data = pd.read_csv("50_states.csv")
-state_list = state_data["state"].to_list()
-print(state_list)
+all_states = state_data["state"].to_list()
 score = Scoreboard()
-# TODO 5:
-while True:
-    # TODO 4: If answer is in file, write the state's name on correct position on map.
-    if answer in state_list:
-        state_pos = state_data[state_data.state == answer]
-        state_x = int(state_pos.x)
-        state_y = int(state_pos.y)
-        show_state(state_x, state_y, answer)
-        score.show_score(answer)
-        print(score.valid_answers)
-        answer = wn.textinput(title="Guess the States", prompt="Enter another State").title()
-    else:
-        answer = wn.textinput(title="Guess the States", prompt="Incorrect. Enter another State").title()
+user_prompt = "Enter a State"
+check_answer = Answers()
 
-wn.mainloop()
+while len(score.valid_answers) < 50:
+    answer = wn.textinput(title="Guess the States", prompt=user_prompt).title()
+    # If user exits from game early, store all the states that have not been named in a new CSV file.
+    if answer == "Exit":
+        missing_states = []
+        for state in all_states:
+            if state not in score.valid_answers:
+                missing_states.append(state)
+        df = pd.DataFrame(missing_states)  # Converts "missing_states" list into a data frame called "df"
+        df.to_csv("missing_states.csv")  # Converts and save "df" into a csv file within directory
+        break  # Exits program early (i.e. closes pop up window). Thus, program does not need "wn.mainloop"
+
+    # If answer is in CSV file, show the state's name on correct position on map.
+    if answer in all_states:
+        state_pos = state_data[state_data.state == answer]
+        check_answer.show_state(int(state_pos.x), int(state_pos.y), answer)
+        score.update_score(answer)
+        user_prompt = "Enter another State"
+    elif answer not in all_states:
+        user_prompt = "Incorrect. Enter another State"
+
+
